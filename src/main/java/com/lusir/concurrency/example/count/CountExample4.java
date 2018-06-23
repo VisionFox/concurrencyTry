@@ -1,4 +1,5 @@
-package com.lusir.concurrency;
+package com.lusir.concurrency.example.count;
+
 
 import com.lusir.concurrency.annoations.NotThreadSafe;
 import lombok.extern.slf4j.Slf4j;
@@ -10,38 +11,41 @@ import java.util.concurrent.Semaphore;
 
 @Slf4j
 @NotThreadSafe
-public class ConcurrencyTest {
-    public static int clientTotal = 5000;
-    public static int threadTotal = 200;
-    public static int cnt = 0;
+public class CountExample4 {
 
-    public static void main(String[] args) throws InterruptedException {
+    // 请求总数
+    public static int clientTotal = 5000;
+
+    // 同时并发执行的线程数
+    public static int threadTotal = 200;
+
+    public static volatile int count = 0;
+
+    public static void main(String[] args) throws Exception {
         ExecutorService executorService = Executors.newCachedThreadPool();
         final Semaphore semaphore = new Semaphore(threadTotal);
         final CountDownLatch countDownLatch = new CountDownLatch(clientTotal);
-
-        for (int i = 0; i < clientTotal; ++i) {
-            executorService.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        semaphore.acquire();
-                        add();
-                        semaphore.release();
-                    } catch (Exception e) {
-                        log.error("异常", e);
-                    }
-                    countDownLatch.countDown();
+        for (int i = 0; i < clientTotal ; i++) {
+            executorService.execute(() -> {
+                try {
+                    semaphore.acquire();
+                    add();
+                    semaphore.release();
+                } catch (Exception e) {
+                    log.error("exception", e);
                 }
+                countDownLatch.countDown();
             });
         }
         countDownLatch.await();
         executorService.shutdown();
-        log.info("count:{}", cnt);
+        log.info("count:{}", count);
     }
 
     private static void add() {
-        ++cnt;
+        count++;
+        // 1、count
+        // 2、+1
+        // 3、count
     }
-
 }
